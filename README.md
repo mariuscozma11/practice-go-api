@@ -12,7 +12,8 @@ I want to build an app that has the follwing:
 ## Auth:
 |HTTP METHOD|Endpoint           |RBAC |
 |--------   |-------------------|-----|
-|POST       |/auth/login        |None |
+|POST       |/auth/login        |None|
+|POST       |/auth/refresh      |Admin only|
 
 ## Posts:
 |HTTP METHOD|Endpoint           |RBAC       |
@@ -22,4 +23,3 @@ I want to build an app that has the follwing:
 |GET        |/posts             |None       |
 |GET        |/posts/[id]        |None       |
 
-# Structure convention

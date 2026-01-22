@@ -1,43 +1,88 @@
+// Package posts
 package posts
 
 import (
+	"context"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
+	"github.com/jackc/pgx/v5"
+	"github.com/mariuscozma11/practice-go-api/db"
 )
 
-type post struct {
-	ID      string `json:"id"`
+type Post struct {
+	PostID  string `db:"post_id"`
+	Title   string `db:"title"`
+	Content string `db:"content"`
+}
+
+func GetPosts(c *gin.Context) {
+	ctx := context.Background()
+	rows, _ := db.DB.Query(ctx, "select * from posts")
+	defer rows.Close()
+	posts, err := pgx.CollectRows(rows, pgx.RowToStructByName[Post])
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+	}
+	c.IndentedJSON(http.StatusOK, posts)
+}
+
+type CreatePost struct {
 	Title   string `json:"title"`
 	Content string `json:"content"`
 }
 
-var posts = []post{
-	{ID: "1", Title: "My first post", Content: "This is my first post"},
-	{ID: "2", Title: "My second post", Content: "This is my second post"},
-	{ID: "3", Title: "My third post", Content: "This is my third post"},
-}
-
-func GetPosts(c *gin.Context) {
-	c.IndentedJSON(http.StatusOK, posts)
-}
-
-func PostPosts(c *gin.Context) {
-	var newPost post
+func PostPost(c *gin.Context) {
+	ctx := context.Background()
+	var newPost CreatePost
 	if err := c.BindJSON(&newPost); err != nil {
-		return
+		c.IndentedJSON(http.StatusBadRequest, err)
 	}
-	posts = append(posts, newPost)
-	c.IndentedJSON(http.StatusCreated, newPost)
+	var post Post
+	err := db.DB.QueryRow(ctx, "insert into posts (title,content) values ($1, $2) returning post_id, title, content", newPost.Title, newPost.Content).Scan(&post.PostID, &post.Title, &post.Content)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+	}
+	c.IndentedJSON(http.StatusOK, post)
 }
 
-func GetPostById(c *gin.Context) {
+func DeletePost(c *gin.Context) {
+	ctx := context.Background()
+	var post Post
 	id := c.Param("id")
-	for _, post := range posts {
-		if post.ID == id {
-			c.IndentedJSON(http.StatusOK, post)
-			return
-		}
+
+	err := db.DB.QueryRow(ctx, "delete from posts where post_id=$1 returning post_id, title, content", id).Scan(&post.PostID, &post.Title, &post.Content)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
 	}
-	c.IndentedJSON(http.StatusNotFound, gin.H{"message": "post not found"})
+	c.IndentedJSON(http.StatusOK, post)
+}
+
+func GetPostByID(c *gin.Context) {
+	ctx := context.Background()
+	var post Post
+	id := c.Param("id")
+
+	err := db.DB.QueryRow(ctx, "select * from posts where post_id=$1", id).Scan(&post.PostID, &post.Title, &post.Content)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+	}
+	c.IndentedJSON(http.StatusOK, post)
+}
+
+func UpdatePostByID(c *gin.Context) {
+	ctx := context.Background()
+	var post Post
+	id := c.Param("id")
+	var updatePost CreatePost
+	if err := c.BindJSON(&updatePost); err != nil {
+		c.IndentedJSON(http.StatusBadRequest, err)
+	}
+
+	err := db.DB.QueryRow(ctx, "update posts set title=$1, content=$2 where post_id=$3 returning post_id, title, content", updatePost.Title, updatePost.Content, id).Scan(&post.PostID, &post.Title, &post.Content)
+	if err != nil {
+		c.IndentedJSON(http.StatusInternalServerError, err)
+	}
+	c.IndentedJSON(http.StatusOK, post)
+
 }
