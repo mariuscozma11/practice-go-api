@@ -68,7 +68,7 @@ func Login(c *gin.Context) {
 	// Create access token 30 minute ttl
 	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": user.email,
-		"exp": time.Now().Add(time.Minute * 30).Unix(),
+		"exp": time.Now().Add(time.Minute).Unix(),
 	})
 
 	// Sign access token  with secret and convert to string
@@ -123,18 +123,26 @@ func ProtectedRoute() gin.HandlerFunc {
 			return
 		}
 		tokenString := strings.TrimPrefix(auth, prefix)
-		claims := jwt.MapClaims{}
+		claims := jwt.StandardClaims{}
 
-		token, err := jwt.ParseWithClaims(tokenString, claims, func(token *jwt.Token) (any, error) {
+		token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (any, error) {
 			return []byte(os.Getenv("JWT_SECRET")), nil
 		})
 		if err != nil {
+			if claims.ExpiresAt < time.Now().Unix() {
+				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+					"message": "token_expired",
+				})
+				return
+			}
+
 			if err == jwt.ErrSignatureInvalid {
 				c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 					"message": "unauthorized",
 				})
 				return
 			}
+			log.Printf("Failed to parse payload %v", err)
 			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
 				"message": "bad request",
 			})
@@ -146,6 +154,7 @@ func ProtectedRoute() gin.HandlerFunc {
 			})
 			return
 		}
+		c.IndentedJSON(http.StatusOK, claims.ExpiresAt)
 		c.Next()
 	}
 }

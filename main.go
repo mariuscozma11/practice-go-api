@@ -21,8 +21,8 @@ func main() {
 	}
 	// Unprotected routes:
 	router.GET("/posts/:id", posts.GetPostByID)
-	router.GET("/posts", posts.GetPosts)
 	router.POST("/login", auth.Login)
+	router.GET("/posts", posts.GetPosts)
 
 	// Protected routes:
 	router.Use(auth.ProtectedRoute())
