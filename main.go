@@ -21,15 +21,15 @@ func main() {
 	}
 	// Unprotected routes:
 	router.GET("/posts/:id", posts.GetPostByID)
+	router.GET("/posts", posts.GetPosts)
+	router.POST("/login", auth.Login)
 
 	// Protected routes:
-	router.DELETE("/posts/:id", posts.DeletePost)
-	router.POST("/posts", posts.PostPost)
-	router.PATCH("/posts/:id", posts.UpdatePostByID)
-	router.POST("/login", auth.Login)
 	router.Use(auth.ProtectedRoute())
 	{
-		router.GET("/posts", posts.GetPosts)
+		router.DELETE("/posts/:id", posts.DeletePost)
+		router.POST("/posts", posts.PostPost)
+		router.PATCH("/posts/:id", posts.UpdatePostByID)
 
 	}
 	router.Run()
