@@ -36,7 +36,7 @@ func Login(c *gin.Context) {
 	err = c.BindJSON(&loginDetails)
 	if err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{
-			"error": "Invalid JSON format",
+			"message": "Bad request",
 		})
 		return
 	}
