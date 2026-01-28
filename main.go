@@ -20,13 +20,17 @@ func main() {
 		log.Fatal("Error creating DB Pool:", err)
 	}
 	// Unprotected routes:
-	router.GET("/posts", posts.GetPosts)
 	router.GET("/posts/:id", posts.GetPostByID)
 
 	// Protected routes:
 	router.DELETE("/posts/:id", posts.DeletePost)
 	router.POST("/posts", posts.PostPost)
 	router.PATCH("/posts/:id", posts.UpdatePostByID)
-	router.POST("/users", auth.LoginUser)
+	router.POST("/login", auth.Login)
+	router.Use(auth.ProtectedRoute())
+	{
+		router.GET("/posts", posts.GetPosts)
+
+	}
 	router.Run()
 }

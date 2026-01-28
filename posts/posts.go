@@ -3,6 +3,7 @@ package posts
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -11,18 +12,20 @@ import (
 )
 
 type Post struct {
-	PostID  string `db:"post_id"`
-	Title   string `db:"title"`
-	Content string `db:"content"`
+	PostID    string `db:"post_id"`
+	Title     string `db:"title"`
+	Content   string `db:"content"`
+	CreatedAt string `db:"created_at"`
 }
 
 func GetPosts(c *gin.Context) {
 	ctx := context.Background()
-	rows, _ := db.DB.Query(ctx, "select * from posts")
+	rows, _ := db.DB.Query(ctx, "select post_id, title, content, created_at::text from posts")
 	defer rows.Close()
 	posts, err := pgx.CollectRows(rows, pgx.RowToStructByName[Post])
 	if err != nil {
-		c.IndentedJSON(http.StatusInternalServerError, err)
+		log.Println(err)
+		return
 	}
 	c.IndentedJSON(http.StatusOK, posts)
 }
