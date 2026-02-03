@@ -73,6 +73,7 @@ func Login(c *gin.Context) {
 	}
 
 	// Create the refresh token 1 month ttl
+
 	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
 		"sub": user.email,
 		"exp": time.Now().Add(time.Hour * 730).Unix(),
