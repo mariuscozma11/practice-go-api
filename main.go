@@ -21,13 +21,13 @@ func main() {
 	if err != nil {
 		log.Fatal("Error creating DB Pool:", err)
 	}
-
 	router.Use(cors.New(cors.Config{
-		AllowOrigins:     []string{"https://mariuscozma.co"},
+		AllowOrigins:     []string{"http://localhost:5173", "https://mariuscozma.co"}, // Your Vite dev server
 		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
 		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
 		AllowCredentials: true,
 	}))
+
 	// Unprotected routes:
 	router.GET("/posts/:id", posts.GetPostByID)
 	router.POST("/login", auth.Login)
