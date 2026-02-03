@@ -23,6 +23,7 @@ func main() {
 	router.GET("/posts/:id", posts.GetPostByID)
 	router.POST("/login", auth.Login)
 	router.GET("/posts", posts.GetPosts)
+	router.GET("/refresh", auth.RefreshToken)
 
 	// Protected routes:
 	router.Use(auth.ProtectedRoute())

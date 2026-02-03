@@ -65,17 +65,11 @@ func Login(c *gin.Context) {
 		})
 		return
 	}
-	// Create access token 30 minute ttl
-	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"sub": user.email,
-		"exp": time.Now().Add(time.Minute).Unix(),
-	})
-
-	// Sign access token  with secret and convert to string
-	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	accessTokenString, err := createAccesToken(user.email)
 	if err != nil {
-		log.Println(err)
-		return
+		c.IndentedJSON(http.StatusBadRequest, gin.H{
+			"message": "Bad request!",
+		})
 	}
 
 	// Create the refresh token 1 month ttl
@@ -113,7 +107,7 @@ func ProtectedRoute() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		err := godotenv.Load()
 		if err != nil {
-			log.Fatal("couldnt load env variables bro", err)
+			log.Fatal("Environment variables failed to load", err)
 		}
 
 		auth := c.GetHeader("Authorization")
@@ -154,7 +148,84 @@ func ProtectedRoute() gin.HandlerFunc {
 			})
 			return
 		}
-		c.IndentedJSON(http.StatusOK, claims.ExpiresAt)
+		c.IndentedJSON(http.StatusOK, gin.H{
+			"message": "Success!",
+		})
 		c.Next()
 	}
+}
+
+func RefreshToken(c *gin.Context) {
+
+	err := godotenv.Load()
+	if err != nil {
+		log.Fatal("Environment variables failed to load")
+	}
+
+	// Get refresh token cookie
+	tokenString, err := c.Cookie("Refresh_Token")
+	if err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+		return
+	}
+
+	// Parse token with JWT secret
+	claims := jwt.StandardClaims{}
+
+	token, err := jwt.ParseWithClaims(tokenString, &claims, func(token *jwt.Token) (any, error) {
+		return []byte(os.Getenv("JWT_SECRET")), nil
+	})
+	if err != nil {
+		if claims.ExpiresAt < time.Now().Unix() {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "token_expired",
+			})
+			return
+		}
+
+		if err == jwt.ErrSignatureInvalid {
+			c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+				"message": "unauthorized",
+			})
+			return
+		}
+		log.Printf("Failed to parse payload %v", err)
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "bad request",
+		})
+		return
+	}
+	if !token.Valid {
+		c.AbortWithStatusJSON(http.StatusUnauthorized, gin.H{
+			"message": "unauthorized",
+		})
+		return
+	}
+	accessToken, err := createAccesToken(claims.Subject)
+	if err != nil {
+		c.IndentedJSON(http.StatusUnauthorized, gin.H{
+			"message": "Unauthorized",
+		})
+	}
+
+	c.IndentedJSON(http.StatusOK, gin.H{
+		"access_token": accessToken,
+	})
+
+}
+
+func createAccesToken(email string) (string, error) {
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"sub": email,
+		"exp": time.Now().Add(time.Minute * 30).Unix(),
+	})
+
+	// Sign access token  with secret and convert to string
+	accessTokenString, err := accessToken.SignedString([]byte(os.Getenv("JWT_SECRET")))
+	if err != nil {
+		return "", err
+	}
+	return accessTokenString, nil
 }
