@@ -23,7 +23,7 @@ func main() {
 	}
 
 	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"https://mariuscozma.co", "http://localhost:5173"}
+	config.AllowOrigins = []string{"https://api.mariuscozma.co", "http://localhost:5173"}
 	router.Use(cors.New(config))
 	// Unprotected routes:
 	router.GET("/posts/:id", posts.GetPostByID)
