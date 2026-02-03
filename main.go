@@ -22,9 +22,12 @@ func main() {
 		log.Fatal("Error creating DB Pool:", err)
 	}
 
-	config := cors.DefaultConfig()
-	config.AllowOrigins = []string{"https://api.mariuscozma.co", "http://localhost:5173"}
-	router.Use(cors.New(config))
+	router.Use(cors.New(cors.Config{
+		AllowOrigins:     []string{"https://mariuscozma.co"},
+		AllowMethods:     []string{"GET", "POST", "PATCH", "DELETE", "OPTIONS"},
+		AllowHeaders:     []string{"Origin", "Content-Type", "Authorization"},
+		AllowCredentials: true,
+	}))
 	// Unprotected routes:
 	router.GET("/posts/:id", posts.GetPostByID)
 	router.POST("/login", auth.Login)
